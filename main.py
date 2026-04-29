@@ -5,7 +5,7 @@ import pandas as pd
 from PIL import Image
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import tensorflow as tf
+import tflite_runtime.interpreter as tflite
 
 app = FastAPI(title="Azzivone AI Skin Analysis Backend")
 
@@ -28,7 +28,7 @@ output_details = None
 
 try:
     if os.path.exists(MODEL_PATH):
-        interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
+        interpreter = tflite.Interpreter(model_path=MODEL_PATH)
         interpreter.allocate_tensors()
         input_details = interpreter.get_input_details()
         output_details = interpreter.get_output_details()
