@@ -134,3 +134,9 @@ async def predict(file: UploadFile = File(...)):
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "Azzivone API running."}
+
+if __name__ == "__main__":
+    import uvicorn
+    import os
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
