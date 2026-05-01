@@ -5,3 +5,4 @@ pillow
 pandas
 openpyxl
 python-multipart
+numpy<2.0.0
