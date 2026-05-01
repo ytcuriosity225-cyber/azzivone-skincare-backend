@@ -1,5 +1,6 @@
 import os
 import io
+import logging
 import numpy as np
 import pandas as pd
 import requests
@@ -10,6 +11,13 @@ from PIL import Image
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import tflite_runtime.interpreter as tflite
+
+# Setup Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Azzivone AI Skin Analysis Backend")
 
@@ -36,11 +44,11 @@ try:
         interpreter.allocate_tensors()
         input_details = interpreter.get_input_details()
         output_details = interpreter.get_output_details()
-        print("TFLite model loaded successfully.")
+        logger.info("TFLite model loaded successfully.")
     else:
-        print(f"Warning: Model file {MODEL_PATH} not found.")
+        logger.warning(f"Model file {MODEL_PATH} not found.")
 except Exception as e:
-    print(f"Error loading TFLite model: {e}")
+    logger.error(f"Error loading TFLite model: {e}")
 
 # Mappings
 CLASSES = ['akiec', 'bcc', 'bkl', 'df', 'mel', 'nv', 'vasc']
@@ -63,11 +71,11 @@ try:
         products_df = pd.read_excel(EXCEL_PATH)
         # Convert NaN to None for JSON compliance
         products_df = products_df.where(pd.notnull(products_df), None)
-        print("Excel data loaded successfully.")
+        logger.info("Excel data loaded successfully.")
     else:
-        print(f"Warning: Excel file {EXCEL_PATH} not found.")
+        logger.warning(f"Excel file {EXCEL_PATH} not found.")
 except Exception as e:
-    print(f"Error loading Excel file: {e}")
+    logger.error(f"Error loading Excel file: {e}")
 
 # Helpers
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
