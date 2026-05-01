@@ -5,3 +5,4 @@ pillow
 pandas
 openpyxl
 python-multipart
+requests

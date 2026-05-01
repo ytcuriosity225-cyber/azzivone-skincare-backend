@@ -2,6 +2,10 @@ import os
 import io
 import numpy as np
 import pandas as pd
+import requests
+import json
+from pydantic import BaseModel
+from typing import Optional, Dict
 from PIL import Image
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -134,6 +138,71 @@ async def predict(file: UploadFile = File(...)):
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "Azzivone API running."}
+
+
+# --- Chat (Gemini) integration ---
+class ChatRequest(BaseModel):
+    message: str
+    analysis: Optional[Dict] = None
+
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyCZxG2hi0WPcWgJzEq89uqMC76Xgv5Nmls")
+# default model; override with env var GEMINI_MODEL if needed
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "models/text-bison-001")
+
+
+def call_gemini(prompt_text: str, max_tokens: int = 512, temperature: float = 0.2) -> str:
+    """Send prompt_text to Google Generative Language API (Gemini/text-bison) and return the response."""
+    url = f"https://generativelanguage.googleapis.com/v1/{GEMINI_MODEL}:generateText"
+    params = {"key": GEMINI_API_KEY}
+    payload = {
+        "prompt": {"text": prompt_text},
+        "maxOutputTokens": max_tokens,
+        "temperature": temperature,
+    }
+
+    resp = requests.post(url, params=params, json=payload, timeout=15)
+    resp.raise_for_status()
+    data = resp.json()
+
+    # Parse typical response shape: { candidates: [{ output: "..." }, ...] }
+    try:
+        candidates = data.get("candidates")
+        if candidates and len(candidates) > 0:
+            return candidates[0].get("output", "").strip()
+    except Exception:
+        pass
+
+    # Fallbacks
+    if isinstance(data.get("output"), str):
+        return data.get("output").strip()
+    return json.dumps(data)
+
+
+@app.post("/chat")
+async def chat_endpoint(payload: ChatRequest):
+    """Accepts a user message and prior skin analysis, returns expert advice from Gemini."""
+    # Build a clear system prompt for an expert dermatologist
+    analysis_text = json.dumps(payload.analysis or {}, indent=2)
+    prompt = (
+        "You are an expert board-certified dermatologist. "
+        "A user provided the following message and previous skin analysis. "
+        "Provide a concise, practical expert advice covering: likely concerns, recommended daily routine (morning/evening), product types to look for, safety or warning notes, and one short follow-up question to refine recommendations. "
+        "Keep language non-technical and actionable for a general user.\n\n"
+        f"User message:\n{payload.message}\n\n"
+        f"Previous skin analysis data:\n{analysis_text}\n\n"
+        "Format the response as plain paragraphs (no JSON)."
+    )
+
+    try:
+        answer = call_gemini(prompt)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error contacting Gemini API: {str(e)}")
+
+    if not answer:
+        raise HTTPException(status_code=502, detail="Empty response from Gemini API")
+
+    return {"advice": answer}
 
 if __name__ == "__main__":
     import uvicorn
