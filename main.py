@@ -154,7 +154,7 @@ class ChatRequest(BaseModel):
     analysis: Optional[Dict] = None
 
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyCZxG2hi0WPcWgJzEq89uqMC76Xgv5Nmls")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # default model; override with env var GEMINI_MODEL if needed
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "models/text-bison-001")
 

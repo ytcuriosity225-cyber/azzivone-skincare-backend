@@ -1,8 +1,5 @@
-# Git
 .git
 .gitignore
-
-# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -11,15 +8,9 @@ __pycache__/
 venv/
 ENV/
 env/
-
-# Node (in case any exist)
 node_modules/
-
-# OS files
 .DS_Store
 Thumbs.db
-
-# Documentation/Configs not needed in prod
 vercel.json
 README.md
 .eslintrc.json
